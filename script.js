@@ -52,11 +52,49 @@ let currentLevel = 'easy'; // 現在のレベル
 // ============================================================
 // ── 文字ごとの画数データ（画数カウントのみ）
 const WRITE_STROKE_DATA = {
-  'あ': 3, 'い': 2, 'う': 2, 'え': 3, 'お': 3,
-  'か': 3, 'き': 4, 'く': 1, 'け': 3, 'こ': 2,
-  'さ': 3, 'し': 1, 'す': 2, 'せ': 3, 'そ': 2,
+  'あ': 3, 'い': 2, 'う': 2, 'え': 2, 'お': 3,
+  'か': 3, 'き': 3, 'く': 1, 'け': 3, 'こ': 2,
+  'さ': 2, 'し': 1, 'す': 2, 'せ': 3, 'そ': 2,
   'た': 3, 'ち': 2, 'つ': 1, 'て': 2, 'と': 2,
   'な': 4, 'に': 3, 'ぬ': 2, 'ね': 3, 'の': 1,
+};
+
+// ── 各画のスタート位置
+// 【修正】キャンバス全体ではなく「文字の実際の描画範囲」を 0〜1 とした座標に変更
+// measureText().actualBoundingBox で計測した範囲内での割合 [x, y]
+// 例：[0.05, 0.20] = 文字の左端から5%・上端から20%の位置
+const WRITE_STROKE_STARTS = {
+  // ── あ行 ──
+  // 【修正】3画目：右上から書き始める位置（右から約70%・上から38%）に調整
+  'あ': [[0.05,0.22], [0.42,0.05], [0.68,0.38]],   // ①横棒左端 ②縦棒上 ③丸の右上から
+  'い': [[0.12,0.08], [0.55,0.03]],                 // ①左カーブ上 ②右カーブ上
+  'う': [[0.32,0.03], [0.22,0.32]],                 // ①上の短棒左 ②主体カーブ左上
+  'え': [[0.22,0.03], [0.18,0.35]],                 // ①横棒（上寄り） ②縦棒上（左寄り）
+  'お': [[0.05,0.20], [0.28,0.03], [0.70,0.22]],   // ①横棒左 ②縦棒上（左寄り） ③丸の右上
+  // ── か行 ──
+  'か': [[0.05,0.38], [0.32,0.03], [0.68,0.22]],   // ①横棒左（上寄り） ②縦棒上 ③右カーブ上（右上寄り）
+  'き': [[0.05,0.18], [0.05,0.46], [0.45,0.08]],              // ①②横棒左（下寄り） ③中上
+  'く': [[0.72,0.05]],                               // ①山の右頂点
+  'け': [[0.10,0.03], [0.32,0.35], [0.72,0.12]],   // ①左縦上（左寄り） ②横棒左（右上） ③右カーブ上（右上）
+  'こ': [[0.18,0.10], [0.18,0.62]],                 // ①上横棒（右上） ②下横棒（右上）
+  // ── さ行 ──
+  'さ': [[0.05,0.28], [0.22,0.05]],                 // ①横棒左（下寄り） ②左上
+  'し': [[0.45,0.03]],                               // ①縦カーブ上
+  'す': [[0.08,0.12], [0.35,0.38]],                 // ①上横棒左 ②主体ループ上
+  'せ': [[0.25,0.03], [0.05,0.52], [0.65,0.18]],   // ①縦棒上 ②横棒左 ③右縦上
+  'そ': [[0.10,0.12], [0.28,0.48]],                 // ①上部左 ②主体左
+  // ── た行 ──
+  'た': [[0.05,0.18], [0.42,0.03], [0.62,0.52]],   // ①横棒左 ②縦棒上 ③右足上
+  'ち': [[0.05,0.22], [0.42,0.42]],                 // ①横棒左 ②主体上
+  'つ': [[0.10,0.10]],                               // ①カーブの左上
+  'て': [[0.05,0.18], [0.22,0.45]],                 // ①横棒左 ②主体左上
+  'と': [[0.38,0.03], [0.52,0.52]],                 // ①縦棒上 ②出っ張り上
+  // ── な行 ──
+  'な': [[0.05,0.18], [0.05,0.42], [0.58,0.25], [0.30,0.60]], // ①②横棒左 ③右縦上 ④ループ左
+  'に': [[0.15,0.03], [0.15,0.55], [0.65,0.03]],   // ①左縦上 ②横棒左 ③右縦上
+  'ぬ': [[0.12,0.05], [0.55,0.05]],                 // ①左上 ②右ループ上
+  'ね': [[0.15,0.05], [0.45,0.08], [0.38,0.65]],   // ①左縦上 ②右横上 ③右ループ左下
+  'の': [[0.48,0.03]],                               // ①カーブ上
 };
 
 // ============================================================
@@ -120,6 +158,10 @@ let writeCanvasH       = 0;     // キャンバスの表示高(px)
 let strokeNumScale = 1.0;  // 現在の番号スケール（書き順ごとに大きくなる）
 let strokeNumAnim  = false; // 拡大アニメーション中フラグ
 let strokeNumAnimStart = 0; // アニメーション開始タイムスタンプ
+// ── 書き順ガイド：スタート位置タッチ判定
+let strokeStartValid = false; // 正しいスタート位置をタッチしたかフラグ
+// 【修正】measureText で計測した文字の実際の描画範囲（CSS px）
+let writeCharBounds = { left: 0, top: 0, w: 0, h: 0 };
 
 // ============================================================
 // キャラクター セリフ集
@@ -914,6 +956,56 @@ function drawWriteGuide(timestamp) {
       : 'rgba(200,185,230,0.45)'; // 未来：薄い紫
     ctx.fill();
   }
+
+  // ── 書き順スタートガイド（点滅する丸）──
+  const starts = WRITE_STROKE_STARTS[writeCurrentChar];
+  if (!starts || currentStrokeIdx >= starts.length) return;
+
+  // 【修正】座標計算：キャンバス全体ではなく文字の実際の描画範囲を基準にする
+  // writeCharBounds は initWriteCanvas() で measureText により計測済み
+  const [nx, ny] = starts[currentStrokeIdx];
+  const gx = writeCharBounds.left + nx * writeCharBounds.w;
+  const gy = writeCharBounds.top  + ny * writeCharBounds.h;
+
+  // 【修正】「ここ！」吹き出しを廃止 → 小さい点滅ドットに変更
+  // 吹き出しは大きすぎてズレが目立つため、シンプルなドットの方がわかりやすい
+
+  // ふわっと拡大縮小するアニメーション（0.75 〜 1.0 の間で変動）
+  const t = (timestamp || 0) / 480;
+  const pulse = 0.75 + 0.25 * Math.sin(t * Math.PI * 2);
+
+  // 画ごとに色を変える（1画目:黄、2画目:ピンク、3画目:水色、4画目:紫）
+  const dotColors = ['#FFD700', '#FF69B4', '#55CCEE', '#CC88FF'];
+  const dotColor  = dotColors[currentStrokeIdx % dotColors.length];
+
+  // ドットサイズ：12〜18px（タブレットで目立つが文字を隠しすぎないサイズ）
+  const baseR = Math.max(12, Math.min(W, H) * 0.038);
+  const dr    = baseR * pulse;
+
+  // 外側のやわらかいグロー
+  const grd = ctx.createRadialGradient(gx, gy, 0, gx, gy, dr * 3.0);
+  grd.addColorStop(0, dotColor + '88');
+  grd.addColorStop(1, dotColor + '00');
+  ctx.beginPath();
+  ctx.arc(gx, gy, dr * 3.0, 0, Math.PI * 2);
+  ctx.fillStyle = grd;
+  ctx.fill();
+
+  // メインのドット（文字なし・シンプルな丸のみ）
+  ctx.beginPath();
+  ctx.arc(gx, gy, dr, 0, Math.PI * 2);
+  ctx.fillStyle   = dotColor;
+  ctx.shadowBlur  = 10;
+  ctx.shadowColor = dotColor;
+  ctx.fill();
+  ctx.shadowBlur  = 0;
+
+  // 白い縁（視認性UP）
+  ctx.beginPath();
+  ctx.arc(gx, gy, dr, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+  ctx.lineWidth   = Math.max(1.5, dr * 0.18);
+  ctx.stroke();
 }
 
 // ============================================================
@@ -1000,6 +1092,34 @@ function initWriteCanvas(char) {
   dctx.globalAlpha = 0.90;
   writeDrawCtx = dctx;
 
+  // 【修正】measureText で文字の実際の描画範囲を計測してwriteCharBoundsに保存
+  // ガイド円の座標はこの範囲を基準に算出する
+  (function measureCharBounds() {
+    const fontSize = Math.min(W, H) * 0.72;
+    const fontStr  = `900 ${fontSize}px 'Hiragino Maru Gothic ProN','Hiragino Sans','Noto Sans JP',sans-serif`;
+    // オフスクリーンcanvasで計測（表示中のcanvasを汚さないため）
+    const tmp = document.createElement('canvas').getContext('2d');
+    tmp.font         = fontStr;
+    // 【重要】実際の描画と同じ textAlign / textBaseline を設定しないと
+    // actualBoundingBox の基準点がズレて座標が狂う
+    tmp.textAlign    = 'center';
+    tmp.textBaseline = 'middle';
+    const m = tmp.measureText(char);
+    if (m.actualBoundingBoxAscent !== undefined && m.actualBoundingBoxAscent > 0) {
+      // actualBoundingBox は textBaseline='middle' のアンカー点（W/2, H/2）からの距離
+      writeCharBounds = {
+        left: W / 2 - m.actualBoundingBoxLeft,
+        top:  H / 2 - m.actualBoundingBoxAscent,
+        w:    m.actualBoundingBoxLeft + m.actualBoundingBoxRight,
+        h:    m.actualBoundingBoxAscent + m.actualBoundingBoxDescent,
+      };
+    } else {
+      // フォールバック（actualBoundingBox 非対応ブラウザ用）
+      const s = Math.min(W, H) * 0.72;
+      writeCharBounds = { left: W / 2 - s * 0.40, top: H / 2 - s * 0.44, w: s * 0.80, h: s * 0.88 };
+    }
+  })();
+
   // イベント設定
   setupWriteEvents(drawCanvas);
 
@@ -1060,11 +1180,28 @@ function processWriteTrace(cx, cy) {
 
 function onWriteStart(e) {
   e.preventDefault();
-  writeIsDrawing = true;
+  writeIsDrawing  = true;
+  strokeStartValid = false; // 毎ストロークごとにリセット
+
   const { x, y } = getWriteXY(e);
   writeLastX = x;
   writeLastY = y;
   processWriteTrace(x, y);
+
+  // 【修正】ガイド位置の近くをタッチしたか判定（文字範囲ベースの座標に統一）
+  const starts = WRITE_STROKE_STARTS[writeCurrentChar];
+  const totalStrokes = getStrokeCount(writeCurrentChar);
+  if (starts && currentStrokeIdx < starts.length && currentStrokeIdx < totalStrokes) {
+    const [nx, ny] = starts[currentStrokeIdx];
+    // drawWriteGuide と同じ計算式でガイド位置を求める
+    const gx = writeCharBounds.left + nx * writeCharBounds.w;
+    const gy = writeCharBounds.top  + ny * writeCharBounds.h;
+    const hitR = Math.min(writeCanvasW, writeCanvasH) * 0.32; // 広めのゆる判定
+    const dist = Math.hypot(x - gx, y - gy);
+    if (dist <= hitR) {
+      strokeStartValid = true;
+    }
+  }
 }
 
 function onWriteMove(e) {
@@ -1079,6 +1216,16 @@ function onWriteMove(e) {
 function onWriteEnd(e) {
   if (!writeIsDrawing) return;
   writeIsDrawing = false;
+
+  // ── ガイド位置をタッチして描いた後、指を離したら次の画へ自動進行 ──
+  // ※ インクは消さない。そのまま残す。
+  if (strokeStartValid && writeHasDraw) {
+    strokeStartValid = false;
+    setTimeout(() => {
+      writeHasDraw = false;          // フラグのみリセット（インクは消さない）
+      advanceToNextStroke(performance.now());
+    }, 350);
+  }
 }
 
 // ============================================================
@@ -1229,18 +1376,19 @@ $('writeRetryBtn').addEventListener('click', () => {
   seClick();
   clearTimeout(writePraiseTimer);
   $('writePraiseOverlay').style.display = 'none';
-  writePraiseShown = false;
-  writeHasDraw = false;
-  currentStrokeIdx = 0;
-  traceProgress = 0;
+  writePraiseShown    = false;
+  writeHasDraw        = false;
+  strokeStartValid    = false;
+  currentStrokeIdx    = 0;
+  traceProgress       = 0;
   stopGuideAnim();
   showWriteChar();
 });
 $('writeDoneBtn').addEventListener('click', () => {
   seClick();
   if (writeHasDraw) {
-    // 1画書いた → 次の画へ進む（全画完了なら褒め演出）
-    clearWriteInkOnly();
+    // 1画書いた → 次の画へ進む（インクは消さず残す）
+    writeHasDraw = false;           // フラグのみリセット
     advanceToNextStroke(performance.now());
   } else {
     speakText('まず かいてみよう！');
