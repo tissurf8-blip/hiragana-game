@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ひらがなゲーム！</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- PWA マニフェスト -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FF91B8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+
+  <!-- 背景デコレーション（星・雲・ハート・きらきら） -->
+  <div class="bg-deco" id="bgDeco"></div>
+
+  <!-- BGM（bgm.mp3 をフォルダに置くと使用される） -->
+  <audio id="bgmAudio" src="bgm.mp3" loop style="display:none"></audio>
+
+  <!-- ミュートボタン（常に右上に固定） -->
+  <button class="mute-btn" id="muteBtn" title="おとのON/OFF">🔊</button>
+
+  <!-- ==================== ① タイトル画面 ==================== -->
+  <div id="titleScreen" class="screen active">
+    <div class="title-content">
+
+      <div class="title-deco">⭐ リアルピース国へ ようこそ！ ⭐</div>
+      <h1 class="game-title">ひらがなゲーム！</h1>
+
+      <!-- キャラクター（なお）大きく中央に -->
+      <div class="title-char-section">
+        <div class="title-char-bubble">
+          いっしょに ひらがなを おぼえよう！🌟
+        </div>
+        <div class="character-fig">
+          <img class="char-img char-img--title" id="titleCharImg"
+               src="char_normal.jpg" alt="なお"
+               onerror="this.style.display='none';document.getElementById('titleAvatarFallback').style.display='flex'">
+          <div class="char-avatar char-fallback" id="titleAvatarFallback" style="display:none">🐨</div>
+          <div class="char-nameplate">なお</div>
+        </div>
+      </div>
+
+      <div class="mode-buttons">
+        <button class="btn-mode btn-mode--search" id="btnModeSearch">
+          <span class="btn-mode-icon">🔍</span>
+          <span class="btn-mode-name">ひらがなを さがす</span>
+          <span class="btn-mode-desc">10もん チャレンジ！</span>
+        </button>
+        <button class="btn-mode btn-mode--write" id="btnModeWrite">
+          <span class="btn-mode-icon">✏️</span>
+          <span class="btn-mode-name">ひらがなを かく</span>
+          <span class="btn-mode-desc">なぞって れんしゅう！</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ② レベル選択画面 ==================== -->
+  <div id="levelScreen" class="screen">
+    <div class="level-content">
+
+      <!-- もどるボタン -->
+      <div class="level-back-row">
+        <button class="back-btn" id="levelBackBtn">← もどる</button>
+      </div>
+
+      <div class="level-heading">レベルをえらんでね！</div>
+
+      <!-- キャラクター（なお）+ 吹き出し -->
+      <div class="level-char-zone">
+        <div class="character-fig">
+          <img class="char-img char-img--level" id="levelCharImg"
+               src="char_thinking.jpg" alt="なお"
+               onerror="this.style.display='none';document.getElementById('levelCharFallback').style.display='flex'">
+          <div class="char-avatar char-fallback" id="levelCharFallback" style="display:none">🐨</div>
+          <div class="char-nameplate">なお</div>
+        </div>
+        <div class="level-char-speech">どのレベルに チャレンジする？</div>
+      </div>
+
+      <!-- 3つのレベルボタン -->
+      <div class="level-buttons">
+
+        <button class="level-btn level-btn--easy" id="btnEasy">
+          <span class="level-btn-stars">⭐</span>
+          <span class="level-btn-name">かんたん</span>
+          <span class="level-btn-desc">あいうえお　3つから えらぶ</span>
+        </button>
+
+        <button class="level-btn level-btn--normal" id="btnNormal">
+          <span class="level-btn-stars">⭐⭐</span>
+          <span class="level-btn-name">ふつう</span>
+          <span class="level-btn-desc">あ〜さぎょう　4つから えらぶ</span>
+        </button>
+
+        <button class="level-btn level-btn--hard" id="btnHard">
+          <span class="level-btn-stars">⭐⭐⭐</span>
+          <span class="level-btn-name">むずかしい</span>
+          <span class="level-btn-desc">ぜんぶのひらがな　5つから えらぶ</span>
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ③ イントロ演出画面 ==================== -->
+  <div id="introScreen" class="screen">
+    <div class="intro-wrap">
+      <div class="intro-text" id="introText">いくよー！</div>
+    </div>
+  </div>
+
+  <!-- ==================== ④ ゲーム画面 ==================== -->
+  <div id="gameScreen" class="screen">
+
+    <!-- ステータスバー（もん数・レベル・星ポイント） -->
+    <div class="status-bar">
+      <!-- もどるボタン（ホームへ） -->
+      <button class="back-btn back-btn--game" id="gameBackBtn">🏠</button>
+      <div class="stat-box">
+        <span class="stat-label">もん</span>
+        <span class="stat-val" id="questionNum">1/10</span>
+      </div>
+      <!-- 現在のレベル表示 -->
+      <div class="level-badge" id="levelBadge">かんたん</div>
+      <!-- フィーバー表示（3連続正解で出現） -->
+      <div class="fever-badge" id="feverBadge" style="display:none">⭐きらきら⭐</div>
+      <div class="stat-box">
+        <span class="stat-label">⭐</span>
+        <span class="stat-val" id="starPoints">0</span>
+      </div>
+    </div>
+
+    <!-- 問題表示：「あ」はどれかな？ -->
+    <div class="question-display" id="questionDisplay">
+      <div class="target-char" id="targetChar">あ</div>
+      <span class="q-label">はどれかな？</span>
+    </div>
+
+    <!-- 動くひらがなエリア -->
+    <div class="float-area" id="floatArea"></div>
+
+    <!-- キャラクター（なお）& セリフ ── 大きく表示 -->
+    <div class="char-zone">
+      <div class="character-fig mini">
+        <img class="char-img char-img--mini" id="gameCharImg"
+             src="char_thinking.jpg" alt="なお"
+             onerror="this.style.display='none';document.getElementById('gameCharFallback').style.display='flex'">
+        <div class="char-avatar char-fallback" id="gameCharFallback" style="display:none">🐨</div>
+        <div class="char-nameplate mini">なお</div>
+      </div>
+      <div class="game-speech" id="gameSpeech">さがして タップ！</div>
+    </div>
+
+    <!-- コンボ表示 -->
+    <div class="combo-pop" id="comboPop" style="display:none">
+      <span id="comboText">2れんぞく！⭐</span>
+    </div>
+
+    <!-- ゲーム終了確認ポップアップ -->
+    <div class="quit-overlay" id="quitOverlay" style="display:none">
+      <div class="quit-box">
+        <div class="quit-icon">🏠</div>
+        <div class="quit-title">ゲームを やめますか？</div>
+        <div class="quit-score">いまのせいかい：<strong id="quitCurrentScore">0</strong> もん</div>
+        <div class="quit-buttons">
+          <button class="quit-btn quit-btn--continue" id="quitContinueBtn">▶ つづける</button>
+          <button class="quit-btn quit-btn--end"      id="quitEndBtn">🏁 おわる</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== ⑤ フィードバック画面（オーバーレイ） ==================== -->
+  <div id="feedbackScreen" class="screen feedback-overlay">
+    <div class="feedback-box">
+      <div class="fb-icon" id="fbIcon">⭐</div>
+      <div class="fb-text" id="fbText">せいかい！</div>
+
+      <div class="character-fig">
+        <img class="char-img char-img--feedback" id="fbCharImg"
+             src="char_happy.jpg" alt="なお"
+             onerror="this.style.display='none';document.getElementById('fbCharFallback').style.display='flex'">
+        <div class="char-avatar char-fallback" id="fbCharFallback" style="display:none">🐨</div>
+        <div class="char-nameplate">なお</div>
+      </div>
+      <div class="fb-speech" id="fbSpeech">すごい！やったー！</div>
+
+      <!-- 正解時のパーティクル演出 -->
+      <div class="particles" id="particles"></div>
+    </div>
+  </div>
+
+  <!-- ==================== ⑥ 結果画面 ==================== -->
+  <div id="resultScreen" class="screen result-screen">
+    <div class="result-content">
+
+      <div class="result-header" id="resultHeader">🎊 ゲームおわり！ 🎊</div>
+      <!-- プレイしたレベル表示 -->
+      <div class="result-level-badge" id="resultLevelBadge">かんたん</div>
+
+      <div class="character-fig">
+        <img class="char-img char-img--result" id="resultCharImg"
+             src="char_happy.jpg" alt="なお"
+             onerror="this.style.display='none';document.getElementById('resultCharFallback').style.display='flex'">
+        <div class="char-avatar char-fallback" id="resultCharFallback" style="display:none">🐨</div>
+        <div class="char-nameplate">なお</div>
+      </div>
+      <div class="result-speech" id="resultSpeech">よくがんばったね！</div>
+
+      <!-- スコア -->
+      <div class="score-row">
+        <div class="score-card">
+          <div class="score-lbl">せいかい</div>
+          <div class="score-num"><span id="finalScore">0</span>/10</div>
+        </div>
+        <div class="score-card">
+          <div class="score-lbl">⭐ ほし</div>
+          <div class="score-num"><span id="finalStars">0</span></div>
+        </div>
+      </div>
+
+      <!-- 獲得星の表示 -->
+      <div class="result-stars" id="resultStars"></div>
+      <div class="result-msg" id="resultMsg">またあそぼう！</div>
+
+      <!-- 結果画面のボタン（2つ） -->
+      <div class="result-btns">
+        <button class="btn-main btn-replay" id="replayBtn">🔄 もういっかい！</button>
+        <button class="btn-main btn-level-select" id="levelSelectBtn">🎯 レベルをえらぶ</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ⑦ 書くモード画面 -->
+  <div id="writeScreen" class="screen">
+    <div class="write-layout">
+
+      <!-- トップバー -->
+      <div class="write-topbar">
+        <button class="write-back-btn" id="writeBackBtn">← もどる</button>
+        <div class="write-label" id="writeLabel">「あ」を かこう！</div>
+        <div class="write-progress" id="writeProgress">1 / 25</div>
+      </div>
+
+      <!-- キャンバスエリア（ガイド文字 + 描画レイヤー） -->
+      <div class="write-canvas-wrap" id="writeCanvasWrap">
+        <canvas id="writeGuideCanvas" class="write-canvas write-canvas--guide"></canvas>
+        <canvas id="writeDrawCanvas" class="write-canvas write-canvas--draw"></canvas>
+      </div>
+
+      <!-- キャラクター＋セリフ -->
+      <div class="write-char-zone">
+        <div class="character-fig mini">
+          <img class="char-img char-img--mini" id="writeCharImg"
+               src="char_thinking.jpg" alt="なお"
+               onerror="this.style.display='none';document.getElementById('writeCharFallback').style.display='flex'">
+          <div class="char-avatar char-fallback" id="writeCharFallback" style="display:none">🐨</div>
+          <div class="char-nameplate mini">なお</div>
+        </div>
+        <div class="write-speech" id="writeSpeech">ゆびで なぞってみよう！</div>
+      </div>
+
+      <!-- 操作ボタン -->
+      <div class="write-action-btns">
+        <button class="write-action-btn write-action-btn--clear" id="writeClearBtn">🗑<br>けす</button>
+        <button class="write-action-btn write-action-btn--retry" id="writeRetryBtn">🔄<br>もういちど</button>
+        <button class="write-action-btn write-action-btn--done" id="writeDoneBtn">⭐<br>できた！</button>
+        <button class="write-action-btn write-action-btn--next" id="writeNextBtn">▶<br>つぎへ</button>
+      </div>
+
+    </div>
+
+    <!-- ほめ演出オーバーレイ -->
+    <div class="write-praise-overlay" id="writePraiseOverlay" style="display:none">
+      <div class="write-praise-box">
+        <div class="write-praise-icon" id="writePraiseIcon">🌟</div>
+        <div class="write-praise-text" id="writePraiseText">じょうず！</div>
+        <div class="character-fig">
+          <img class="char-img char-img--feedback" id="writePraiseCharImg"
+               src="char_happy.jpg" alt="なお"
+               onerror="this.style.display='none';document.getElementById('writePraiseCharFallback').style.display='flex'">
+          <div class="char-avatar char-fallback" id="writePraiseCharFallback" style="display:none">🐨</div>
+          <div class="char-nameplate">なお</div>
+        </div>
+        <div class="write-praise-speech" id="writePraiseSpeech">すごく じょうずに かけたね！</div>
+        <div class="particles" id="writePraiseParticles"></div>
+        <button class="write-praise-next-btn" id="writePraiseNextBtn">つぎへ ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js');
+      });
+    }
+  </script>
+</body>
+</html>
