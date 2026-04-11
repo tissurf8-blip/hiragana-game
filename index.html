@@ -237,7 +237,41 @@
     </div>
   </div>
 
-  <!-- ⑦ 書くモード画面 -->
+  <!-- ⑦ 書くモード 行えらび画面 -->
+  <div id="writeSelectScreen" class="screen">
+    <div class="write-select-layout">
+      <button class="write-back-btn" id="writeSelectBackBtn">← もどる</button>
+      <div class="write-select-title">どのグループを れんしゅうする？</div>
+      <div class="write-select-btns">
+        <button class="write-select-btn" id="writeBtnRowA">
+          <span class="write-select-row-label">あ行</span>
+          <span class="write-select-chars">あ・い・う・え・お</span>
+        </button>
+        <button class="write-select-btn" id="writeBtnRowKa">
+          <span class="write-select-row-label">か行</span>
+          <span class="write-select-chars">か・き・く・け・こ</span>
+        </button>
+        <button class="write-select-btn" id="writeBtnRowSa">
+          <span class="write-select-row-label">さ行</span>
+          <span class="write-select-chars">さ・し・す・せ・そ</span>
+        </button>
+        <button class="write-select-btn" id="writeBtnRowTa">
+          <span class="write-select-row-label">た行</span>
+          <span class="write-select-chars">た・ち・つ・て・と</span>
+        </button>
+        <button class="write-select-btn" id="writeBtnRowNa">
+          <span class="write-select-row-label">な行</span>
+          <span class="write-select-chars">な・に・ぬ・ね・の</span>
+        </button>
+        <button class="write-select-btn write-select-btn--all" id="writeBtnRowAll">
+          <span class="write-select-row-label">ぜんぶ</span>
+          <span class="write-select-chars">あ〜の 25文字</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑧ 書くモード画面 -->
   <div id="writeScreen" class="screen">
     <div class="write-layout">
 
@@ -268,6 +302,7 @@
 
       <!-- 操作ボタン -->
       <div class="write-action-btns">
+        <button class="write-action-btn write-action-btn--prev" id="writePrevBtn">◀<br>まえへ</button>
         <button class="write-action-btn write-action-btn--clear" id="writeClearBtn">🗑<br>けす</button>
         <button class="write-action-btn write-action-btn--retry" id="writeRetryBtn">🔄<br>もういちど</button>
         <button class="write-action-btn write-action-btn--done" id="writeDoneBtn">⭐<br>できた！</button>

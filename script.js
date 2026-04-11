@@ -54,9 +54,9 @@ let currentLevel = 'easy'; // 現在のレベル
 const WRITE_STROKE_DATA = {
   'あ': 3, 'い': 2, 'う': 2, 'え': 2, 'お': 3,
   'か': 3, 'き': 3, 'く': 1, 'け': 3, 'こ': 2,
-  'さ': 2, 'し': 1, 'す': 2, 'せ': 3, 'そ': 2,
-  'た': 3, 'ち': 2, 'つ': 1, 'て': 2, 'と': 2,
-  'な': 4, 'に': 3, 'ぬ': 2, 'ね': 3, 'の': 1,
+  'さ': 2, 'し': 1, 'す': 2, 'せ': 3, 'そ': 1,
+  'た': 4, 'ち': 2, 'つ': 1, 'て': 1, 'と': 2,
+  'な': 4, 'に': 3, 'ぬ': 2, 'ね': 2, 'の': 1,
 };
 
 // ── 各画のスタート位置
@@ -79,21 +79,21 @@ const WRITE_STROKE_STARTS = {
   'こ': [[0.18,0.10], [0.18,0.62]],                 // ①上横棒（右上） ②下横棒（右上）
   // ── さ行 ──
   'さ': [[0.05,0.28], [0.22,0.05]],                 // ①横棒左（下寄り） ②左上
-  'し': [[0.45,0.03]],                               // ①縦カーブ上
-  'す': [[0.08,0.12], [0.35,0.38]],                 // ①上横棒左 ②主体ループ上
-  'せ': [[0.25,0.03], [0.05,0.52], [0.65,0.18]],   // ①縦棒上 ②横棒左 ③右縦上
-  'そ': [[0.10,0.12], [0.28,0.48]],                 // ①上部左 ②主体左
+  'し': [[0.15,0.03]],                               // ①縦カーブ上（さらに左寄り）
+  'す': [[0.08,0.20], [0.35,0.46]],                 // ①上横棒左（下寄り） ②主体ループ上（下寄り）
+  'せ': [[0.05,0.42], [0.65,0.18], [0.25,0.03]],   // ①横棒左（上寄り） ②右縦上 ③左縦上
+  'そ': [[0.28,0.05]],                               // ①右上から
   // ── た行 ──
-  'た': [[0.05,0.18], [0.42,0.03], [0.62,0.52]],   // ①横棒左 ②縦棒上 ③右足上
-  'ち': [[0.05,0.22], [0.42,0.42]],                 // ①横棒左 ②主体上
+  'た': [[0.05,0.26], [0.30,0.03], [0.52,0.38], [0.50,0.64]], // ①横棒左（下寄り） ②縦棒上（左寄り） ③少し左 ④右下
+  'ち': [[0.05,0.22], [0.42,0.05]],                 // ①横棒左 ②主体上（最上部）
   'つ': [[0.10,0.10]],                               // ①カーブの左上
-  'て': [[0.05,0.18], [0.22,0.45]],                 // ①横棒左 ②主体左上
-  'と': [[0.38,0.03], [0.52,0.52]],                 // ①縦棒上 ②出っ張り上
+  'て': [[0.05,0.18]],                               // ①横棒左
+  'と': [[0.25,0.03], [0.82,0.30]],                 // ①縦棒上（左寄り） ②出っ張り右下
   // ── な行 ──
-  'な': [[0.05,0.18], [0.05,0.42], [0.58,0.25], [0.30,0.60]], // ①②横棒左 ③右縦上 ④ループ左
-  'に': [[0.15,0.03], [0.15,0.55], [0.65,0.03]],   // ①左縦上 ②横棒左 ③右縦上
+  'な': [[0.05,0.18], [0.38,0.08], [0.28,0.58], [0.68,0.35]], // ①横棒左 ②中上（少し左） ③左下 ④右上
+  'に': [[0.15,0.03], [0.32,0.25], [0.42,0.55]],   // ①左縦上 ②中左 ③左下
   'ぬ': [[0.12,0.05], [0.55,0.05]],                 // ①左上 ②右ループ上
-  'ね': [[0.15,0.05], [0.45,0.08], [0.38,0.65]],   // ①左縦上 ②右横上 ③右ループ左下
+  'ね': [[0.28,0.05], [0.05,0.22]],                 // ①左縦上（少し左） ②左下
   'の': [[0.48,0.03]],                               // ①カーブ上
 };
 
@@ -107,6 +107,19 @@ const WRITE_CHARS = [
   'た','ち','つ','て','と',
   'な','に','ぬ','ね','の',
 ];
+
+// 行ごとのグループ
+const WRITE_ROW_CHARS = {
+  a:  ['あ','い','う','え','お'],
+  ka: ['か','き','く','け','こ'],
+  sa: ['さ','し','す','せ','そ'],
+  ta: ['た','ち','つ','て','と'],
+  na: ['な','に','ぬ','ね','の'],
+  all: WRITE_CHARS,
+};
+
+// 現在練習中の文字リスト（行えらびで変わる）
+let writeActiveChars = WRITE_CHARS;
 
 // 文字ごとの描画色（パステル・明るい色）
 const WRITE_STROKE_COLORS = [
@@ -1013,13 +1026,18 @@ function drawWriteGuide(timestamp) {
 // ============================================================
 
 function startWriteMode() {
+  showScreen('writeSelectScreen');
+}
+
+function startWriteRow(rowKey) {
+  writeActiveChars = WRITE_ROW_CHARS[rowKey] || WRITE_CHARS;
   writeIndex = 0;
   showScreen('writeScreen');
   showWriteChar();
 }
 
 function showWriteChar() {
-  const char  = WRITE_CHARS[writeIndex % WRITE_CHARS.length];
+  const char  = writeActiveChars[writeIndex % writeActiveChars.length];
   writeCurrentColor = WRITE_STROKE_COLORS[writeIndex % WRITE_STROKE_COLORS.length];
 
   const strokeCount = WRITE_STROKE_DATA[char] || 0;
@@ -1029,7 +1047,7 @@ function showWriteChar() {
   } else {
     $('writeLabel').textContent = `「${char}」を かこう！`;
   }
-  $('writeProgress').textContent = `${writeIndex + 1} / ${WRITE_CHARS.length}`;
+  $('writeProgress').textContent = `${writeIndex + 1} / ${writeActiveChars.length}`;
 
   setCharImg('writeCharImg', 'thinking');
   $('writeSpeech').textContent = rand(WRITE_SPEECHES);
@@ -1339,8 +1357,16 @@ function showWritePraise() {
 // ============================================================
 function goNextWriteChar() {
   writeIndex++;
-  if (writeIndex >= WRITE_CHARS.length) {
+  if (writeIndex >= writeActiveChars.length) {
     writeIndex = 0; // 最初に戻る（ループ）
+  }
+  showWriteChar();
+}
+
+function goPrevWriteChar() {
+  writeIndex--;
+  if (writeIndex < 0) {
+    writeIndex = writeActiveChars.length - 1; // 最後に戻る（ループ）
   }
   showWriteChar();
 }
@@ -1359,12 +1385,26 @@ $('btnModeWrite').addEventListener('click', () => {
   startWriteMode();
 });
 
+// ── 書くモード 行えらび ──
+$('writeSelectBackBtn').addEventListener('click', () => {
+  seClick();
+  showScreen('titleScreen');
+});
+['a','ka','sa','ta','na','all'].forEach(row => {
+  const idMap = { a:'writeBtnRowA', ka:'writeBtnRowKa', sa:'writeBtnRowSa',
+                  ta:'writeBtnRowTa', na:'writeBtnRowNa', all:'writeBtnRowAll' };
+  $(idMap[row]).addEventListener('click', () => {
+    seClick();
+    startWriteRow(row);
+  });
+});
+
 // ── 書くモード ──
 $('writeBackBtn').addEventListener('click', () => {
   seClick();
   stopGuideAnim();
   clearTimeout(writePraiseTimer);
-  showScreen('titleScreen');
+  showScreen('writeSelectScreen');
 });
 $('writeClearBtn').addEventListener('click', () => {
   seClick();
@@ -1399,6 +1439,13 @@ $('writeNextBtn').addEventListener('click', () => {
   seClick();
   clearTimeout(writePraiseTimer);
   goNextWriteChar();
+});
+$('writePrevBtn').addEventListener('click', () => {
+  seClick();
+  clearTimeout(writePraiseTimer);
+  $('writePraiseOverlay').style.display = 'none';
+  writePraiseShown = false;
+  goPrevWriteChar();
 });
 $('writePraiseNextBtn').addEventListener('click', () => {
   seClick();
